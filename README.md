@@ -38,6 +38,14 @@ npm run test:e2e
 npm run build
 ```
 
+
+## Deployments
+
+- GitHub Pages: https://lilmatic.github.io/oh-my-accountant/
+- Vercel: https://oh-my-accountant.vercel.app/
+
+Vercel serves the Vite client from `dist/client` and routes `/api/*` to the Express app through `api/index.ts`. On Vercel, the MVP JSON database uses `/tmp/oh-my-accountant/app-db.json`, so uploaded data is ephemeral and should be replaced with a durable database before real production use.
+
 ## Local data
 
 The app uses a simple local JSON data store at `data/app-db.json` by default. This keeps the MVP easy to run while preserving the planned one-user / one-workspace data model. Generated data files are ignored by Git.

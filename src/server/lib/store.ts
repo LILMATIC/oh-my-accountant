@@ -3,7 +3,8 @@ import { dirname, resolve } from 'node:path';
 import type { AppDatabase, BurnReport, Category, CsvImport, LabeledSource, Transaction, TransactionFilters, Vendor } from '../../shared/types.js';
 import { createId, nowIso } from './ids.js';
 
-const DB_PATH = resolve(process.env.ACCOUNTANT_DB_PATH ?? 'data/app-db.json');
+const DEFAULT_DB_PATH = process.env.VERCEL ? '/tmp/oh-my-accountant/app-db.json' : 'data/app-db.json';
+const DB_PATH = resolve(process.env.ACCOUNTANT_DB_PATH ?? DEFAULT_DB_PATH);
 export const DEFAULT_USER_ID = 'user_demo';
 export const DEFAULT_WORKSPACE_ID = 'workspace_demo';
 
