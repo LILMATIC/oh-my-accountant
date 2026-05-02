@@ -1,0 +1,5 @@
+Date,Description,Amount,Vendor
+2026-03-01,OpenAI ChatGPT,120,OpenAI
+not-a-date,AWS Cloud,300,AWS
+2026-03-03,Broken Amount,abc,Vendor X
+2026-03-04,Valid Hosting,450,AWS

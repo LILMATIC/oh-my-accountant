@@ -1,0 +1,32 @@
+Date,Description,Amount,Account,Category,Vendor,Memo
+2026-01-02,OpenAI ChatGPT Team,120,Corporate Card,Software,OpenAI,AI tool
+2026-01-03,AWS Cloud Hosting,700,Corporate Card,Cloud Infrastructure,AWS,Production hosting
+2026-01-05,Gusto Payroll,5200,Bank,Payroll & Contractors,Gusto,January payroll
+2026-01-08,Slack Subscription,180,Corporate Card,Software,Slack,Team chat
+2026-01-10,Notion Workspace,96,Corporate Card,Software,Notion,Docs
+2026-01-12,WeWork Office,900,Bank,Office,WeWork,Office
+2026-01-15,Google Ads,400,Corporate Card,Marketing,Google Ads,Campaign
+2026-01-18,GitHub Teams,88,Corporate Card,Software,GitHub,Repos
+2026-01-22,Uber Client Meeting,42,Corporate Card,Travel,Uber,Transport
+2026-01-28,Contractor Design Sprint,1800,Bank,Payroll & Contractors,Freelance Studio,Design
+2026-02-02,OpenAI ChatGPT Team,220,Corporate Card,Software,OpenAI,AI tool upgrade
+2026-02-03,AWS Cloud Hosting,980,Corporate Card,Cloud Infrastructure,AWS,Production hosting
+2026-02-05,Gusto Payroll,5200,Bank,Payroll & Contractors,Gusto,February payroll
+2026-02-08,Slack Subscription,180,Corporate Card,Software,Slack,Team chat
+2026-02-10,Notion Workspace,96,Corporate Card,Software,Notion,Docs
+2026-02-12,WeWork Office,900,Bank,Office,WeWork,Office
+2026-02-15,Google Ads,650,Corporate Card,Marketing,Google Ads,Campaign increase
+2026-02-18,GitHub Teams,88,Corporate Card,Software,GitHub,Repos
+2026-02-22,Lyft Client Meeting,58,Corporate Card,Travel,Lyft,Transport
+2026-02-28,Contractor Design Sprint,1800,Bank,Payroll & Contractors,Freelance Studio,Design
+2026-03-02,OpenAI ChatGPT Enterprise,620,Corporate Card,Software,OpenAI,AI tool expansion
+2026-03-03,AWS Cloud Hosting,1450,Corporate Card,Cloud Infrastructure,AWS,Production hosting spike
+2026-03-05,Gusto Payroll,5200,Bank,Payroll & Contractors,Gusto,March payroll
+2026-03-08,Slack Subscription,240,Corporate Card,Software,Slack,Team chat seats
+2026-03-10,Notion Workspace,96,Corporate Card,Software,Notion,Docs
+2026-03-12,WeWork Office,900,Bank,Office,WeWork,Office
+2026-03-15,Google Ads,1200,Corporate Card,Marketing,Google Ads,Campaign spike
+2026-03-18,GitHub Teams,88,Corporate Card,Software,GitHub,Repos
+2026-03-22,Delta Air Lines,540,Corporate Card,Travel,Delta,Conference flight
+2026-03-25,Uncategorized SaaS Tool,350,Corporate Card,,Mystery SaaS,Needs review
+2026-03-28,Contractor Design Sprint,1800,Bank,Payroll & Contractors,Freelance Studio,Design
