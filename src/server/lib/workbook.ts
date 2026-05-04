@@ -41,7 +41,7 @@ function buildSummarySheet(imports: CsvImport[], sourceRows: number, spendRows: 
   const topCategory = metrics.topCategories[0];
   return [
     ['AI Accountant Categorized Spend Workbook', null],
-    ['Basis', 'Settled/closed/cleared spending only. Cancelled authorizations, deposits/topups, withdrawals, swaps, cashback/referral rows, pending rows, hold releases, and zero-dollar rows are excluded when status/type evidence is present.'],
+    ['Basis', 'Settled/closed/cleared spending only. Cancelled authorizations, deposits/topups, USDC/crypto wallet funding, withdrawals, swaps, cashback/referral rows, pending rows, hold releases, and zero-dollar rows are excluded when status/type evidence is present.'],
     ['Source files', imports.map((item) => item.fileName).join(', ') || 'None'],
     ['Source rows extracted', sourceRows],
     ['Categorized spend rows', spendRows.length],

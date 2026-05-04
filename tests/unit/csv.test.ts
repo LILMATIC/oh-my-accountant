@@ -83,3 +83,22 @@ it('infers negative statement spending when spend-like rows are negative', () =>
   expect(mapping).toMatchObject({ transactionType: 'Type', status: 'Status' });
   expect(inferSpendDirection(csvText, mapping)).toBe('spend-negative');
 });
+
+it('excludes USDC and crypto wallet top-ups from spend summaries', () => {
+  resetDbForTests();
+  const csvText = [
+    'Date,Description,Amount,Vendor,Status,Type,Currency',
+    '2026-04-10,Topping up USDC wallet,1000,Coinbase,CLEARED,card_spend,USD',
+    '2026-04-11,USDC top-up,500,Ramp,CLEARED,purchase,USD',
+    '2026-04-12,OpenAI ChatGPT Team,120,OpenAI,CLEARED,card_spend,USD'
+  ].join('\n');
+  const result = buildTransactions({
+    csvText,
+    mapping: { date: 'Date', description: 'Description', amount: 'Amount', vendor: 'Vendor', status: 'Status', transactionType: 'Type', currency: 'Currency' },
+    spendDirectionMode: 'spend-positive',
+    workspaceId: 'workspace_demo',
+    csvImportId: 'import_usdc_topup'
+  });
+  expect(result.transactions).toHaveLength(1);
+  expect(result.transactions[0]).toMatchObject({ description: 'OpenAI ChatGPT Team', categoryName: 'Business software & cloud' });
+});

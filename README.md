@@ -49,7 +49,7 @@ Vercel serves the Vite client from `dist/client` and routes `/api/*` to the Expr
 
 ## Categorization workflow
 
-CSV imports auto-detect column mappings and spend direction, then normalize into settled/closed/cleared spending where status/type evidence is available. The app excludes cancelled/pending authorizations, deposits/topups, withdrawals, swaps, cashback/referral rows, hold releases, and zero-dollar rows; refunds are preserved as adjustments. Merchant/type rules assign simplified categories and keep a `categoryRule` explanation for auditability.
+CSV imports auto-detect column mappings and spend direction, then normalize into settled/closed/cleared spending where status/type evidence is available. The app excludes cancelled/pending authorizations, deposits/topups, USDC/crypto wallet funding, withdrawals, swaps, cashback/referral rows, hold releases, and zero-dollar rows; refunds are preserved as adjustments. Merchant/type rules assign simplified categories and keep a `categoryRule` explanation for auditability.
 
 ## Local data
 

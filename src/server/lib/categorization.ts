@@ -122,9 +122,11 @@ const CATEGORY_RULES: CategoryRule[] = [
 
 const EXCLUDED_STATUS = /\b(cancelled|canceled|declined|failed|reversed|void|expired|pending|authorization|authorized)\b/i;
 const INCLUDED_STATUS = /\b(cleared|settled|closed|posted|complete|completed|paid)\b/i;
-const EXCLUDED_TYPE = /\b(deposit|top\s?up|withdrawal|withdraw|swap|cashback|referral|hold release|release|payment|transfer|zero.?dollar hold)\b/i;
+const EXCLUDED_TYPE = /\b(deposit|top\s?up|top-up|topping\s+up|recharge|load\s+funds?|wallet\s+load|fund\s+wallet|withdrawal|withdraw|swap|cashback|referral|hold release|release|payment|transfer|zero.?dollar hold)\b/i;
 const REFUND_TYPE = /\b(card_refund|refund|reversal|credit)\b/i;
 const SPEND_TYPE = /\b(card_spend|consumption|purchase|sale|debit|charge|authorization fee)\b/i;
+const CRYPTO_ASSET = /\b(usdc|usdt|dai|busd|stablecoin|stablecoins?|crypto|wallet)\b/i;
+const CRYPTO_FUNDING = /\b(top\s?up|top-up|topping\s+up|deposit|recharge|load\s+funds?|fund\s+wallet|transfer|swap|onramp|offramp)\b/i;
 
 export function categorizeSpend({ description, vendor = '', originalCategory = '', transactionType = '' }: CategorizationInput): CategorizationResult {
   const text = `${description} ${vendor} ${originalCategory} ${transactionType}`.trim();
@@ -158,6 +160,7 @@ export function categorizeSpend({ description, vendor = '', originalCategory = '
 export function decideInclusion({ status = '', transactionType = '', direction, amount, description = '' }: InclusionInput): InclusionDecision {
   const combined = `${status} ${transactionType} ${description}`.trim();
   if (amount === 0) return { included: false, reason: 'excluded zero-dollar activity' };
+  if (CRYPTO_ASSET.test(combined) && CRYPTO_FUNDING.test(combined)) return { included: false, reason: `excluded crypto/stablecoin funding activity: ${description || transactionType}` };
   if (EXCLUDED_STATUS.test(status) && !INCLUDED_STATUS.test(status)) return { included: false, reason: `excluded non-settled status: ${status}` };
   if (EXCLUDED_TYPE.test(transactionType) || EXCLUDED_TYPE.test(description)) return { included: false, reason: `excluded non-spend activity: ${transactionType || description}` };
   if (REFUND_TYPE.test(combined)) return { included: direction === 'inflow', reason: direction === 'inflow' ? 'included cleared refund as adjustment' : 'excluded refund-like row without credit direction' };
