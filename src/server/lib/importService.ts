@@ -1,5 +1,5 @@
 import type { ColumnMapping, CsvImport, SpendDirectionMode } from '../../shared/types.js';
-import { buildTransactions, createPreview, validateRows } from './csv.js';
+import { buildTransactions, createPreview, inferSpendDirection, validateRows } from './csv.js';
 import { createId, nowIso } from './ids.js';
 import { addTransactions, findImport, getWorkspaceId, saveImport } from './store.js';
 
@@ -20,6 +20,35 @@ export function previewImport(csvText: string, fileName: string) {
   };
   saveImport(csvImport);
   return preview;
+}
+
+
+export function autoImport(csvText: string, fileName: string) {
+  const preview = previewImport(csvText, fileName);
+  const mapping = preview.suggestedMapping;
+  const spendDirectionMode = inferSpendDirection(csvText, mapping);
+  const validation = validateImport(preview.importId, mapping);
+
+  if (!validation.ok) {
+    return {
+      imported: false,
+      preview,
+      mapping,
+      spendDirectionMode,
+      import: findImport(preview.importId),
+      transactions: [],
+      validation
+    };
+  }
+
+  const committed = commitImport(preview.importId, mapping, spendDirectionMode);
+  return {
+    imported: committed.transactions.length > 0,
+    preview,
+    mapping,
+    spendDirectionMode,
+    ...committed
+  };
 }
 
 export function validateImport(importId: string, mapping: ColumnMapping) {

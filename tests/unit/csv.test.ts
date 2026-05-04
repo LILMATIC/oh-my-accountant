@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { parseCsv, suggestColumnMapping, validateRows, normalizeAmount, buildTransactions } from '../../src/server/lib/csv';
+import { parseCsv, suggestColumnMapping, validateRows, normalizeAmount, buildTransactions, inferSpendDirection } from '../../src/server/lib/csv';
 import { resetDbForTests } from '../../src/server/lib/store';
 
 const fixture = (name: string) => readFileSync(`tests/fixtures/${name}`, 'utf8');
@@ -70,4 +70,16 @@ it('applies settled-spend inclusion rules and merchant categorization evidence',
   expect(result.transactions).toHaveLength(2);
   expect(result.transactions[0]).toMatchObject({ categoryName: 'Business software & cloud', subcategory: 'AI, SaaS, cloud, dev tools', categoryRule: 'merchant matched SaaS/cloud/dev-tool rule' });
   expect(result.transactions[1]).toMatchObject({ direction: 'inflow', categoryName: 'Refunds & adjustments' });
+});
+
+it('infers negative statement spending when spend-like rows are negative', () => {
+  const csvText = [
+    'Date,Description,Amount,Type,Status',
+    '2026-04-01,Closed Consumption,-25,Consumption,CLOSED',
+    '2026-04-02,Payment,200,Payment,CLOSED'
+  ].join('\n');
+  const parsed = parseCsv(csvText);
+  const mapping = suggestColumnMapping(parsed.headers);
+  expect(mapping).toMatchObject({ transactionType: 'Type', status: 'Status' });
+  expect(inferSpendDirection(csvText, mapping)).toBe('spend-negative');
 });

@@ -13,6 +13,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  autoImport: (csvText: string, fileName: string) => request<{ imported: boolean; preview: PreviewResult; mapping: ColumnMapping; spendDirectionMode: SpendDirectionMode; import: CsvImport | null; transactions: Transaction[]; validation: ValidationResult }>('/api/imports/auto', { method: 'POST', body: JSON.stringify({ csvText, fileName }) }),
   previewImport: (csvText: string, fileName: string) => request<PreviewResult>('/api/imports/preview', { method: 'POST', body: JSON.stringify({ csvText, fileName }) }),
   validateImport: (importId: string, mapping: ColumnMapping) => request<ValidationResult>('/api/imports/validate', { method: 'POST', body: JSON.stringify({ importId, mapping }) }),
   commitImport: (importId: string, mapping: ColumnMapping, spendDirectionMode: SpendDirectionMode) => request<{ import: CsvImport; transactions: Transaction[]; validation: ValidationResult }>('/api/imports/commit', { method: 'POST', body: JSON.stringify({ importId, mapping, spendDirectionMode }) }),

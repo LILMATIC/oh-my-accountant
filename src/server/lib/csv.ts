@@ -108,6 +108,33 @@ export function createPreview(csvText: string): PreviewResult {
   };
 }
 
+
+export function inferSpendDirection(csvText: string, mapping: ColumnMapping): SpendDirectionMode {
+  const parsed = parseCsv(csvText);
+  const evidence = { positiveSpendLike: 0, negativeSpendLike: 0, positiveTotal: 0, negativeTotal: 0 };
+
+  for (const row of parsed.rows) {
+    const amountHeader = mapping.amount;
+    if (!amountHeader) continue;
+    const amount = parseAmount(readMapped(row, amountHeader));
+    if (!Number.isFinite(amount) || amount === 0) continue;
+
+    if (amount > 0) evidence.positiveTotal += Math.abs(amount);
+    else evidence.negativeTotal += Math.abs(amount);
+
+    const transactionText = `${readMapped(row, mapping.transactionType)} ${readMapped(row, mapping.status)} ${readMapped(row, mapping.description)}`;
+    if (/\b(card_spend|consumption|purchase|sale|debit|charge|authorization fee)\b/i.test(transactionText)) {
+      if (amount > 0) evidence.positiveSpendLike += Math.abs(amount);
+      else evidence.negativeSpendLike += Math.abs(amount);
+    }
+  }
+
+  if (evidence.negativeSpendLike > evidence.positiveSpendLike) return 'spend-negative';
+  if (evidence.positiveSpendLike > evidence.negativeSpendLike) return 'spend-positive';
+  if (evidence.negativeTotal > evidence.positiveTotal * 2) return 'spend-negative';
+  return 'spend-positive';
+}
+
 export function validateRows(csvText: string, mapping: ColumnMapping): ValidationResult {
   const parsed = parseCsv(csvText);
   const errors: ImportError[] = [];

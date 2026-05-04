@@ -58,18 +58,27 @@ function UploadScreen({ onImported }: { onImported: () => void }) {
   const [spendDirectionMode, setSpendDirectionMode] = useState<SpendDirectionMode>('spend-positive');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [showAdvancedMapping, setShowAdvancedMapping] = useState(false);
 
   async function handleFile(file?: File) {
     if (!file) return;
     setBusy(true);
-    setMessage('Reading CSV…');
+    setMessage('Analyzing and categorizing transactions…');
+    setShowAdvancedMapping(false);
     try {
       const csvText = await file.text();
-      const result = await api.previewImport(csvText, file.name);
-      setPreview(result);
-      setMapping(result.suggestedMapping);
-      setValidation(null);
-      setMessage(`Found ${result.rowCount} rows. Please confirm the column mapping.`);
+      const result = await api.autoImport(csvText, file.name);
+      setPreview(result.preview);
+      setMapping(result.mapping);
+      setSpendDirectionMode(result.spendDirectionMode);
+      setValidation(result.validation);
+      if (result.imported) {
+        setMessage(`Auto-categorized ${result.transactions.length} cleared spend/adjustment rows. Redirecting to dashboard…`);
+        onImported();
+        return;
+      }
+      setShowAdvancedMapping(true);
+      setMessage('I could not confidently import this file automatically. Review the detected columns below.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Could not read the file.');
     } finally {
@@ -113,16 +122,24 @@ function UploadScreen({ onImported }: { onImported: () => void }) {
   return (
     <section className="stack">
       <div className="card">
-        <h1>Upload and map your CSV</h1>
-        <p>Required columns are date, description, and amount. Account, category, vendor, and memo are optional.</p>
+        <h1>Upload your CSV</h1>
+        <p>The app now detects columns, spend direction, settled rows, merchants, and categories automatically. Manual mapping only appears if auto-import cannot confidently read the file.</p>
         <input aria-label="CSV file" type="file" accept=".csv,text/csv" onChange={(event) => void handleFile(event.target.files?.[0])} />
         {message && <p className="status">{message}</p>}
       </div>
 
-      {preview && (
+      {preview && !showAdvancedMapping && (
+        <div className="card">
+          <h2>Detected preview</h2>
+          <DataTable rows={preview.sampleRows} />
+          {validation && <ValidationSummary validation={validation} />}
+        </div>
+      )}
+
+      {preview && showAdvancedMapping && (
         <div className="grid two">
           <div className="card">
-            <h2>Column mapping</h2>
+            <h2>Advanced column mapping</h2>
             {columnKeys.map((key) => (
               <label key={key} className="field-row">
                 <span>{key}{requiredColumns.has(key) ? ' *' : ''}</span>
@@ -138,8 +155,8 @@ function UploadScreen({ onImported }: { onImported: () => void }) {
               <label><input type="radio" checked={spendDirectionMode === 'spend-negative'} onChange={() => setSpendDirectionMode('spend-negative')} /> Spending is negative numbers</label>
             </fieldset>
             <div className="actions">
-              <button onClick={() => void validate()} disabled={busy}>Validate</button>
-              <button className="primary" onClick={() => void commit()} disabled={busy}>Import valid rows</button>
+              <button onClick={() => void validate()} disabled={busy}>Validate mapping</button>
+              <button className="primary" onClick={() => void commit()} disabled={busy}>Import with these columns</button>
             </div>
           </div>
           <div className="card">

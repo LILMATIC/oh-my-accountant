@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { previewImport, validateImport, commitImport } from '../../src/server/lib/importService';
+import { autoImport, previewImport, validateImport, commitImport } from '../../src/server/lib/importService';
 import { getDashboardMetrics } from '../../src/server/lib/analytics';
 import { getTransactions, resetDbForTests } from '../../src/server/lib/store';
 
@@ -21,5 +21,13 @@ describe('CSV import integration flow', () => {
     expect(committed.import?.invalidRowCount).toBe(2);
     expect(getTransactions()).toHaveLength(2);
     expect(getDashboardMetrics().totalSpend).toBe(570);
+  });
+
+  it('auto-detects mappings and imports without manual column confirmation', () => {
+    const result = autoImport(fixture('mixed-invalid.csv'), 'mixed-invalid.csv');
+    expect(result.imported).toBe(true);
+    expect(result.mapping).toMatchObject({ date: 'Date', description: 'Description', amount: 'Amount', vendor: 'Vendor' });
+    expect(result.transactions).toHaveLength(2);
+    expect(getTransactions()).toHaveLength(2);
   });
 });

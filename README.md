@@ -4,7 +4,7 @@ A greenfield MVP for startup founders to upload manual CSV transactions, underst
 
 ## What this MVP does
 
-- Upload a CSV and map date, description, amount, account, category, vendor, and memo columns.
+- Upload a CSV and have date, description, amount, account/card, category, vendor, status, type, currency, and memo columns detected automatically.
 - Validate CSV rows with clear row-level errors.
 - Partially import valid rows while skipping invalid rows.
 - Review transactions with search and editable category/vendor labels.
@@ -49,7 +49,7 @@ Vercel serves the Vite client from `dist/client` and routes `/api/*` to the Expr
 
 ## Categorization workflow
 
-CSV imports are normalized into settled/closed/cleared spending where status/type evidence is available. The app excludes cancelled/pending authorizations, deposits/topups, withdrawals, swaps, cashback/referral rows, hold releases, and zero-dollar rows; refunds are preserved as adjustments. Merchant/type rules assign simplified categories and keep a `categoryRule` explanation for auditability.
+CSV imports auto-detect column mappings and spend direction, then normalize into settled/closed/cleared spending where status/type evidence is available. The app excludes cancelled/pending authorizations, deposits/topups, withdrawals, swaps, cashback/referral rows, hold releases, and zero-dollar rows; refunds are preserved as adjustments. Merchant/type rules assign simplified categories and keep a `categoryRule` explanation for auditability.
 
 ## Local data
 

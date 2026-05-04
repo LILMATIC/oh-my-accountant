@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { ColumnMapping, SpendDirectionMode, TransactionFilters } from '../../shared/types.js';
 import { answerQuestion } from '../lib/ai.js';
 import { getDashboardMetrics } from '../lib/analytics.js';
-import { commitImport, previewImport, validateImport } from '../lib/importService.js';
+import { autoImport, commitImport, previewImport, validateImport } from '../lib/importService.js';
 import { generateReport } from '../lib/report.js';
 import { buildCategorizedSpendWorkbook } from '../lib/workbook.js';
 import { getReport, getTransactions, listCategories, listVendors, loadDb, updateTransactionLabels } from '../lib/store.js';
@@ -14,6 +14,16 @@ apiRouter.get('/health', (_req, res) => res.json({ ok: true, service: 'ai-accoun
 apiRouter.get('/workspace', (_req, res) => {
   const db = loadDb();
   res.json({ user: db.users[0], workspace: db.workspaces[0] });
+});
+
+apiRouter.post('/imports/auto', (req, res, next) => {
+  try {
+    const { csvText, fileName } = req.body as { csvText?: string; fileName?: string };
+    if (!csvText) return res.status(400).json({ error: 'Please choose a CSV file before importing.' });
+    return res.json(autoImport(csvText, fileName ?? 'transactions.csv'));
+  } catch (error) {
+    return next(error);
+  }
 });
 
 apiRouter.post('/imports/preview', (req, res, next) => {
