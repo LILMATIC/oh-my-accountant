@@ -31,7 +31,13 @@ export function loadDb(): AppDatabase {
     persistDb();
     return memoryDb;
   }
-  memoryDb = JSON.parse(readFileSync(DB_PATH, 'utf8')) as AppDatabase;
+  const dbText = readFileSync(DB_PATH, 'utf8').trim();
+  if (!dbText) {
+    memoryDb = seedDatabase();
+    persistDb();
+    return memoryDb;
+  }
+  memoryDb = JSON.parse(dbText) as AppDatabase;
   return memoryDb;
 }
 

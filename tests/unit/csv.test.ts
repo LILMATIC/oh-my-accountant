@@ -50,3 +50,24 @@ describe('CSV parsing and validation', () => {
     expect(result.transactions[1].sourceRowNumber).toBe(5);
   });
 });
+
+it('applies settled-spend inclusion rules and merchant categorization evidence', () => {
+  resetDbForTests();
+  const csvText = [
+    'Date,Description,Amount,Vendor,Status,Type,Currency',
+    '2026-04-01,OpenAI ChatGPT Team,120,OpenAI,CLEARED,card_spend,USD',
+    '2026-04-02,Pending Taxi,45,Taxi Co,PENDING,card_spend,USD',
+    '2026-04-03,Founder Deposit,5000,Bank,CLEARED,deposit,USD',
+    '2026-04-04,GitHub Refund,-20,GitHub,CLEARED,card_refund,USD'
+  ].join('\n');
+  const result = buildTransactions({
+    csvText,
+    mapping: { date: 'Date', description: 'Description', amount: 'Amount', vendor: 'Vendor', status: 'Status', transactionType: 'Type', currency: 'Currency' },
+    spendDirectionMode: 'spend-positive',
+    workspaceId: 'workspace_demo',
+    csvImportId: 'import_rules'
+  });
+  expect(result.transactions).toHaveLength(2);
+  expect(result.transactions[0]).toMatchObject({ categoryName: 'Business software & cloud', subcategory: 'AI, SaaS, cloud, dev tools', categoryRule: 'merchant matched SaaS/cloud/dev-tool rule' });
+  expect(result.transactions[1]).toMatchObject({ direction: 'inflow', categoryName: 'Refunds & adjustments' });
+});

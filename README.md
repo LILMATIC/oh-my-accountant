@@ -11,6 +11,7 @@ A greenfield MVP for startup founders to upload manual CSV transactions, underst
 - View dashboard metrics for total spend, burn trend, top categories, top vendors, unusual increases, and burn drivers.
 - Ask a server-side assistant questions based on allowlisted transaction metrics.
 - Generate a Markdown burn reduction report.
+- Export a categorized Excel workbook with Summary, Category Summary, Monthly Category, Merchant Summary, Categorized Spend, and audit tabs.
 
 ## What this MVP intentionally does not do
 
@@ -45,6 +46,10 @@ npm run build
 - Vercel: https://oh-my-accountant.vercel.app/
 
 Vercel serves the Vite client from `dist/client` and routes `/api/*` to the Express app through `api/index.ts`. On Vercel, the MVP JSON database uses `/tmp/oh-my-accountant/app-db.json`, so uploaded data is ephemeral and should be replaced with a durable database before real production use.
+
+## Categorization workflow
+
+CSV imports are normalized into settled/closed/cleared spending where status/type evidence is available. The app excludes cancelled/pending authorizations, deposits/topups, withdrawals, swaps, cashback/referral rows, hold releases, and zero-dollar rows; refunds are preserved as adjustments. Merchant/type rules assign simplified categories and keep a `categoryRule` explanation for auditability.
 
 ## Local data
 

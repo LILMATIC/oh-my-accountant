@@ -6,9 +6,13 @@ const PERCENT_INCREASE_THRESHOLD = 25;
 
 export function getDashboardMetrics(params: { start?: string; end?: string } = {}): DashboardMetrics {
   const workspaceId = getWorkspaceId();
-  const transactions = getTransactions({ start: params.start, end: params.end }, workspaceId).filter((transaction) => transaction.direction === 'outflow');
+  const periodTransactions = getTransactions({ start: params.start, end: params.end }, workspaceId);
+  const transactions = periodTransactions.filter((transaction) => transaction.direction === 'outflow');
+  const refundTransactions = periodTransactions.filter((transaction) => transaction.direction === 'inflow');
   const previousTransactions = getPreviousPeriodTransactions(params, workspaceId);
   const totalSpend = sumSpend(transactions);
+  const refundsAndAdjustments = sumSpend(refundTransactions);
+  const netSpend = roundMoney(totalSpend - refundsAndAdjustments);
   const topCategories = rankBy(transactions, (transaction) => transaction.categoryName);
   const topVendors = rankBy(transactions, (transaction) => transaction.vendorName);
   const unusualIncreases = [
@@ -20,6 +24,11 @@ export function getDashboardMetrics(params: { start?: string; end?: string } = {
     workspaceId,
     dateRange: { start: params.start, end: params.end },
     totalSpend,
+    grossSpend: totalSpend,
+    refundsAndAdjustments,
+    netSpend,
+    categorizedSpendRows: transactions.length,
+    summaryHighlights: buildSummaryHighlights(totalSpend, refundsAndAdjustments, netSpend, topCategories, topVendors, transactions.length),
     trend: buildMonthlyTrend(transactions),
     topCategories,
     topVendors,
@@ -74,7 +83,7 @@ export function buildRecommendations(
     });
   }
 
-  const uncategorizedSpend = transactions.filter((transaction) => transaction.categoryName === 'Uncategorized').reduce((sum, transaction) => sum + transaction.amount, 0);
+  const uncategorizedSpend = transactions.filter((transaction) => transaction.categoryName === 'Other').reduce((sum, transaction) => sum + transaction.amount, 0);
   if (uncategorizedSpend > 0) {
     recommendations.push({
       id: 'data-quality-uncategorized',
@@ -82,7 +91,7 @@ export function buildRecommendations(
       rationale: `There is ${currency(uncategorizedSpend)} in uncategorized spend, which can hide burn drivers.`,
       reviewAction: 'Assign categories and vendors to uncategorized rows before making final burn decisions.',
       relatedType: 'data_quality',
-      relatedName: 'Uncategorized',
+      relatedName: 'Other',
       estimatedSpend: uncategorizedSpend
     });
   }
@@ -100,6 +109,23 @@ export function buildRecommendations(
   }
 
   return dedupeRecommendations(recommendations).slice(0, 8);
+}
+
+
+function buildSummaryHighlights(
+  grossSpend: number,
+  refundsAndAdjustments: number,
+  netSpend: number,
+  topCategories: RankedSpend[],
+  topVendors: RankedSpend[],
+  categorizedSpendRows: number
+) {
+  if (grossSpend === 0) return ['No categorized spend has been imported yet.'];
+  const highlights = [`${categorizedSpendRows} categorized spend rows total ${currency(grossSpend)} gross spend.`];
+  if (refundsAndAdjustments > 0) highlights.push(`${currency(refundsAndAdjustments)} in refunds/adjustments brings net spend to ${currency(netSpend)}.`);
+  if (topCategories[0]) highlights.push(`${topCategories[0].name} is the largest category at ${currency(topCategories[0].spend)} (${Math.round(topCategories[0].shareOfTotal * 100)}%).`);
+  if (topVendors[0]) highlights.push(`${topVendors[0].name} is the largest merchant/vendor at ${currency(topVendors[0].spend)}.`);
+  return highlights;
 }
 
 function rankBy(transactions: Transaction[], keyFn: (transaction: Transaction) => string): RankedSpend[] {

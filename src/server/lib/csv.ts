@@ -1,17 +1,21 @@
 import type { ColumnKey, ColumnMapping, ImportError, PreviewResult, SpendDirectionMode, Transaction, ValidationResult } from '../../shared/types.js';
 import { createId, nowIso } from './ids.js';
+import { categorizeSpend, decideInclusion, inferVendor } from './categorization.js';
 import { getOrCreateCategory, getOrCreateVendor } from './store.js';
 
 const REQUIRED_COLUMNS: ColumnKey[] = ['date', 'description', 'amount'];
-const ALL_COLUMNS: ColumnKey[] = ['date', 'description', 'amount', 'account', 'category', 'vendor', 'memo'];
+const ALL_COLUMNS: ColumnKey[] = ['date', 'description', 'amount', 'account', 'category', 'vendor', 'memo', 'status', 'transactionType', 'currency'];
 const HEADER_SYNONYMS: Record<ColumnKey, string[]> = {
-  date: ['date', 'transaction date', 'posted date', 'created date'],
-  description: ['description', 'details', 'transaction', 'name', 'payee'],
-  amount: ['amount', 'value', 'total', 'debit', 'credit'],
-  account: ['account', 'bank account', 'card', 'source account'],
-  category: ['category', 'type', 'spend category'],
-  vendor: ['vendor', 'merchant', 'supplier', 'payee'],
-  memo: ['memo', 'notes', 'note', 'comment']
+  date: ['date', 'transaction date', 'posted date', 'created date', 'timestamp'],
+  description: ['description', 'details', 'transaction', 'name', 'payee', 'merchant description'],
+  amount: ['amount', 'value', 'total', 'debit', 'credit', 'amount usd', 'usd amount'],
+  account: ['account', 'bank account', 'card', 'cardholder', 'source account'],
+  category: ['category', 'merchant category', 'original category', 'spend category', 'mcc'],
+  vendor: ['vendor', 'merchant', 'supplier', 'payee', 'merchant name'],
+  memo: ['memo', 'notes', 'note', 'comment'],
+  status: ['status', 'state', 'transaction status'],
+  transactionType: ['transaction type', 'type', 'activity type'],
+  currency: ['currency', 'original currency']
 };
 
 export type ParsedCsv = {
@@ -154,7 +158,8 @@ export function buildTransactions(params: {
   const transactions = parsed.rows
     .map((row, index) => ({ row, sourceRowNumber: index + 2 }))
     .filter(({ sourceRowNumber }) => !invalidRows.has(sourceRowNumber))
-    .map(({ row, sourceRowNumber }) => rowToTransaction({ ...params, row, sourceRowNumber }));
+    .map(({ row, sourceRowNumber }) => rowToTransaction({ ...params, row, sourceRowNumber }))
+    .filter((transaction): transaction is Transaction => transaction !== null);
 
   return { transactions, validation };
 }
@@ -166,13 +171,21 @@ function rowToTransaction(params: {
   workspaceId: string;
   csvImportId: string;
   sourceRowNumber: number;
-}): Transaction {
+}): Transaction | null {
   const get = (key: ColumnKey) => readMapped(params.row, params.mapping[key]);
   const rawAmount = parseAmount(get('amount'));
   const { amount, direction } = normalizeAmount(rawAmount, params.spendDirectionMode);
-  const categoryName = get('category') || inferCategory(get('description'), get('vendor'));
-  const vendorName = get('vendor') || inferVendor(get('description'));
-  const category = getOrCreateCategory(params.workspaceId, categoryName, get('category') ? 'imported' : 'auto_suggested');
+  const description = get('description');
+  const originalCategory = get('category');
+  const vendorName = get('vendor') || inferVendor(description);
+  const status = get('status');
+  const transactionType = get('transactionType');
+  const inclusion = decideInclusion({ status, transactionType, direction, amount, description });
+  if (!inclusion.included) return null;
+  const categorization = direction === 'inflow'
+    ? { categoryName: 'Refunds & adjustments', subcategory: 'Refund or credit', categoryRule: inclusion.reason }
+    : categorizeSpend({ description, vendor: vendorName, originalCategory, transactionType });
+  const category = getOrCreateCategory(params.workspaceId, categorization.categoryName, categorization.categoryRule.includes('retained imported') ? 'imported' : 'auto_suggested');
   const vendor = getOrCreateVendor(params.workspaceId, vendorName, get('vendor') ? 'imported' : 'auto_suggested');
   const createdAt = nowIso();
 
@@ -181,17 +194,23 @@ function rowToTransaction(params: {
     workspaceId: params.workspaceId,
     csvImportId: params.csvImportId,
     date: normalizeDate(get('date')),
-    description: get('description'),
+    description,
     amount,
     direction,
     account: get('account') || undefined,
     categoryId: category.id,
     categoryName: category.name,
     categorySource: category.source,
+    originalCategory: originalCategory || undefined,
+    subcategory: categorization.subcategory,
+    categoryRule: categorization.categoryRule,
     vendorId: vendor.id,
     vendorName: vendor.name,
     vendorSource: vendor.source,
     memo: get('memo') || undefined,
+    status: status || undefined,
+    transactionType: transactionType || undefined,
+    currency: get('currency') || undefined,
     sourceRowNumber: params.sourceRowNumber,
     rawRow: params.row,
     createdAt,
@@ -257,20 +276,4 @@ export function normalizeVendorName(name: string) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ');
-}
-
-function inferVendor(description: string) {
-  const cleaned = description.replace(/\d{4,}/g, '').replace(/[*#]/g, ' ').trim();
-  return cleaned.split(/\s{2,}| - | \| /)[0]?.slice(0, 48) || 'Unknown Vendor';
-}
-
-function inferCategory(description: string, vendor: string) {
-  const text = `${description} ${vendor}`.toLowerCase();
-  if (/aws|amazon web|gcp|google cloud|azure|cloudflare|vercel|netlify/.test(text)) return 'Cloud Infrastructure';
-  if (/openai|slack|notion|github|figma|linear|software|saas|chatgpt/.test(text)) return 'Software';
-  if (/payroll|gusto|deel|rippling|contractor|salary/.test(text)) return 'Payroll & Contractors';
-  if (/rent|office|wework/.test(text)) return 'Office';
-  if (/ads|marketing|facebook|google ads|linkedin/.test(text)) return 'Marketing';
-  if (/travel|uber|lyft|airline|hotel/.test(text)) return 'Travel';
-  return 'Uncategorized';
 }

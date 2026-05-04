@@ -5,7 +5,7 @@ import { api } from './lib/api';
 import { DisclaimerNote } from './components/DisclaimerNote';
 import './styles.css';
 
-const columnKeys: ColumnKey[] = ['date', 'description', 'amount', 'account', 'category', 'vendor', 'memo'];
+const columnKeys: ColumnKey[] = ['date', 'description', 'amount', 'account', 'category', 'vendor', 'status', 'transactionType', 'currency', 'memo'];
 const requiredColumns = new Set<ColumnKey>(['date', 'description', 'amount']);
 
 type Tab = 'start' | 'upload' | 'dashboard' | 'transactions' | 'assistant' | 'report';
@@ -175,11 +175,12 @@ function DashboardView({ metrics }: { metrics: DashboardMetrics }) {
   return (
     <section className="stack">
       <div className="dashboard-cards">
-        <MetricCard title="Total spend" value={formatCurrency(metrics.totalSpend)} />
+        <MetricCard title="Gross spend" value={formatCurrency(metrics.grossSpend)} detail={`${metrics.categorizedSpendRows} categorized rows`} />
+        <MetricCard title="Net spend" value={formatCurrency(metrics.netSpend)} detail={metrics.refundsAndAdjustments ? `${formatCurrency(metrics.refundsAndAdjustments)} refunds/adjustments` : ''} />
         <MetricCard title="Top category" value={metrics.topCategories[0]?.name ?? 'No data'} detail={metrics.topCategories[0] ? formatCurrency(metrics.topCategories[0].spend) : ''} />
         <MetricCard title="Top vendor" value={metrics.topVendors[0]?.name ?? 'No data'} detail={metrics.topVendors[0] ? formatCurrency(metrics.topVendors[0].spend) : ''} />
-        <MetricCard title="Unusual increases" value={String(metrics.unusualIncreases.length)} />
       </div>
+      <div className="card"><h2>Clean spend summary</h2><ul>{metrics.summaryHighlights.map((highlight) => <li key={highlight}>{highlight}</li>)}</ul></div>
       <div className="grid two">
         <RankedList title="Top categories" items={metrics.topCategories} />
         <RankedList title="Top vendors" items={metrics.topVendors} />
@@ -210,7 +211,7 @@ function Transactions({ onUpdated }: { onUpdated: () => void }) {
       <h1>Transactions</h1>
       <input aria-label="Search transactions" placeholder="Search description, vendor, memo…" value={search} onChange={(event) => setSearch(event.target.value)} />
       {error && <p className="error">{error}</p>}
-      <table className="transactions"><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Category</th><th>Vendor</th><th>Account</th><th>Save</th></tr></thead><tbody>{transactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} onSave={save} />)}</tbody></table>
+      <table className="transactions"><thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Category</th><th>Subcategory</th><th>Rule</th><th>Vendor</th><th>Account</th><th>Save</th></tr></thead><tbody>{transactions.map((transaction) => <TransactionRow key={transaction.id} transaction={transaction} onSave={save} />)}</tbody></table>
     </section>
   );
 }
@@ -218,7 +219,7 @@ function Transactions({ onUpdated }: { onUpdated: () => void }) {
 function TransactionRow({ transaction, onSave }: { transaction: Transaction; onSave: (transaction: Transaction, category: string, vendor: string) => Promise<void> }) {
   const [category, setCategory] = useState(transaction.categoryName);
   const [vendor, setVendor] = useState(transaction.vendorName);
-  return <tr><td>{transaction.date}</td><td>{transaction.description}</td><td>{formatCurrency(transaction.amount)}</td><td><input value={category} onChange={(event) => setCategory(event.target.value)} /></td><td><input value={vendor} onChange={(event) => setVendor(event.target.value)} /></td><td>{transaction.account ?? '-'}</td><td><button onClick={() => void onSave(transaction, category, vendor)}>Save</button></td></tr>;
+  return <tr><td>{transaction.date}</td><td>{transaction.description}</td><td>{formatCurrency(transaction.direction === 'inflow' ? -transaction.amount : transaction.amount)}</td><td><input value={category} onChange={(event) => setCategory(event.target.value)} /></td><td>{transaction.subcategory}</td><td><small>{transaction.categoryRule}</small></td><td><input value={vendor} onChange={(event) => setVendor(event.target.value)} /></td><td>{transaction.account ?? '-'}</td><td><button onClick={() => void onSave(transaction, category, vendor)}>Save</button></td></tr>;
 }
 
 function Assistant() {
@@ -266,7 +267,16 @@ function Report() {
     anchor.click();
     URL.revokeObjectURL(url);
   }
-  return <section className="card"><h1>Burn reduction report</h1><p>Generate a founder-friendly report with top spend, unusual increases, and review actions.</p><button className="primary" onClick={() => void generate()}>Generate report</button>{content && <><div className="actions"><button onClick={() => void copy()}>Copy</button><button onClick={download}>Export Markdown</button></div><pre className="report-preview">{content}</pre></>}</section>;
+  async function downloadWorkbook() {
+    const blob = await api.downloadSpendWorkbook();
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'categorized-spend-workbook.xlsx';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+  return <section className="card"><h1>Burn reduction report</h1><p>Generate a founder-friendly report or download a categorized Excel workbook with summary, category, monthly, merchant, transaction, and audit tabs.</p><div className="actions"><button className="primary" onClick={() => void generate()}>Generate report</button><button onClick={() => void downloadWorkbook()}>Export categorized Excel</button></div>{content && <><div className="actions"><button onClick={() => void copy()}>Copy</button><button onClick={download}>Export Markdown</button></div><pre className="report-preview">{content}</pre></>}</section>;
 }
 
 function MetricCard({ title, value, detail = '' }: { title: string; value: string; detail?: string }) { return <div className="metric card"><span>{title}</span><strong>{value}</strong>{detail && <small>{detail}</small>}</div>; }

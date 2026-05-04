@@ -22,7 +22,8 @@
     "react": "latest",
     "react-dom": "latest",
     "tsx": "latest",
-    "vite": "latest"
+    "vite": "latest",
+    "write-excel-file": "^4.0.5"
   },
   "devDependencies": {
     "@eslint/js": "latest",

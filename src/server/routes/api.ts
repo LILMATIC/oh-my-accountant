@@ -4,6 +4,7 @@ import { answerQuestion } from '../lib/ai.js';
 import { getDashboardMetrics } from '../lib/analytics.js';
 import { commitImport, previewImport, validateImport } from '../lib/importService.js';
 import { generateReport } from '../lib/report.js';
+import { buildCategorizedSpendWorkbook } from '../lib/workbook.js';
 import { getReport, getTransactions, listCategories, listVendors, loadDb, updateTransactionLabels } from '../lib/store.js';
 
 export const apiRouter = Router();
@@ -87,6 +88,17 @@ apiRouter.post('/ai/chat', async (req, res, next) => {
 apiRouter.post('/reports', (req, res) => {
   const { start, end } = req.body as { start?: string; end?: string };
   res.json(generateReport({ start, end }));
+});
+
+apiRouter.get('/reports/spend-workbook.xlsx', async (_req, res, next) => {
+  try {
+    const workbook = await buildCategorizedSpendWorkbook();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=categorized-spend-workbook.xlsx');
+    return res.send(workbook);
+  } catch (error) {
+    return next(error);
+  }
 });
 
 apiRouter.get('/reports/:id', (req, res) => {

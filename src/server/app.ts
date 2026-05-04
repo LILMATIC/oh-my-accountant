@@ -39,7 +39,3 @@ export function createApp({ serveClient = false }: AppOptions = {}) {
   loadDb();
   return app;
 }
-
-const app = createApp();
-
-export default app;

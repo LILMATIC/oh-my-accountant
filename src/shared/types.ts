@@ -1,4 +1,4 @@
-export type ColumnKey = 'date' | 'description' | 'amount' | 'account' | 'category' | 'vendor' | 'memo';
+export type ColumnKey = 'date' | 'description' | 'amount' | 'account' | 'category' | 'vendor' | 'memo' | 'status' | 'transactionType' | 'currency';
 
 export type ColumnMapping = Partial<Record<ColumnKey, string>>;
 
@@ -101,6 +101,12 @@ export type Transaction = {
   vendorName: string;
   vendorSource: LabeledSource;
   memo?: string;
+  status?: string;
+  transactionType?: string;
+  currency?: string;
+  originalCategory?: string;
+  subcategory: string;
+  categoryRule: string;
   sourceRowNumber: number;
   rawRow: Record<string, string>;
   createdAt: string;
@@ -143,6 +149,11 @@ export type DashboardMetrics = {
   workspaceId: string;
   dateRange: { start?: string; end?: string };
   totalSpend: number;
+  grossSpend: number;
+  refundsAndAdjustments: number;
+  netSpend: number;
+  categorizedSpendRows: number;
+  summaryHighlights: string[];
   trend: TrendPoint[];
   topCategories: RankedSpend[];
   topVendors: RankedSpend[];

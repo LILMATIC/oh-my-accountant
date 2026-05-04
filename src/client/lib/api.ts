@@ -20,5 +20,10 @@ export const api = {
   updateTransaction: (id: string, body: { categoryName?: string; vendorName?: string }) => request<Transaction>(`/api/transactions/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   dashboard: (query = '') => request<DashboardMetrics>(`/api/dashboard${query}`),
   askAi: (question: string, start?: string, end?: string) => request<{ answer: string }>('/api/ai/chat', { method: 'POST', body: JSON.stringify({ question, start, end }) }),
-  createReport: (start?: string, end?: string) => request<BurnReport>('/api/reports', { method: 'POST', body: JSON.stringify({ start, end }) })
+  createReport: (start?: string, end?: string) => request<BurnReport>('/api/reports', { method: 'POST', body: JSON.stringify({ start, end }) }),
+  downloadSpendWorkbook: async () => {
+    const response = await fetch('/api/reports/spend-workbook.xlsx');
+    if (!response.ok) throw new Error(`Workbook export failed: ${response.status}`);
+    return response.blob();
+  }
 };
